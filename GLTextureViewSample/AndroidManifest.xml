@@ -27,6 +27,13 @@
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+        <activity android:name="com.eaglesakura.view.sample.RenderingActivityCC"
+            android:configChanges="orientation|screenSize"
+             >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

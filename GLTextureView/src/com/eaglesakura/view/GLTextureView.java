@@ -383,9 +383,14 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
             @Override
             public void run() {
                 // created
-                renderer.onSurfaceCreated(gl11, eglManager.getConfig());
+                eglManager.bind();
+                {
+                    renderer.onSurfaceCreated(gl11, eglManager.getConfig());
+                }
+                eglManager.unbind();
 
                 while (!destroyed) {
+                    int sleepTime = 1;
                     if (!sleep) {
                         synchronized (lock) {
                             eglManager.bind();
@@ -403,16 +408,16 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
                                 eglManager.swapBuffers();
                             }
                             eglManager.unbind();
-
-                            lock.notifyAll();
                         }
                     } else {
-                        try {
-                            // sleep rendering thread
-                            Thread.sleep(10);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        sleepTime = 10;
+                    }
+
+                    try {
+                        // sleep rendering thread
+                        Thread.sleep(sleepTime);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
 

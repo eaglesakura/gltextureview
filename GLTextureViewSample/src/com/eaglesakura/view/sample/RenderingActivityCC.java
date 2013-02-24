@@ -6,9 +6,9 @@ import android.view.View;
 
 import com.eaglesakura.view.GLTextureView;
 
-public class RenderingActivity extends Activity {
+public class RenderingActivityCC extends Activity {
 
-    static final String TAG = RenderingActivity.class.getSimpleName();
+    static final String TAG = RenderingActivityCC.class.getSimpleName();
 
     View contentView;
     GLTextureView glTextureView = null;
