@@ -72,6 +72,8 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
      */
     boolean sleep = false;
 
+    boolean initialized = false;
+
     /**
      * surface texture width
      */
@@ -111,8 +113,12 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         sleep = false;
     }
 
-    protected boolean isInitialized() {
-        return eglManager != null;
+    /**
+     * check EGL Initialized
+     * @return
+     */
+    public boolean isInitialized() {
+        return initialized;
     }
 
     /**
@@ -186,6 +192,10 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         synchronized (lock) {
+
+            surfaceWidth = width;
+            surfaceHeight = height;
+
             if (!isInitialized()) {
                 eglManager = new EGLManager();
 
@@ -201,28 +211,33 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
                     gl11 = eglManager.getGL11();
                 }
 
+                eglManager.resize(surface);
+
                 if (renderingThreadType != RenderingThreadType.BackgroundThread) {
                     // UIThread || request
                     eglManager.bind();
                     renderer.onSurfaceCreated(gl11, eglManager.getConfig());
+                    renderer.onSurfaceChanged(gl11, width, height);
+                    eglManager.unbind();
+                }
+            } else {
+                eglManager.resize(surface);
+
+                if (renderingThreadType != RenderingThreadType.BackgroundThread) {
+                    // UIThread || request
+                    eglManager.bind();
+                    renderer.onSurfaceChanged(gl11, width, height);
                     eglManager.unbind();
                 }
             }
 
-            surfaceWidth = width;
-            surfaceHeight = height;
-
-            eglManager.resize(surface);
-            if (renderingThreadType != RenderingThreadType.BackgroundThread) {
-                // UIThread || request
-                eglManager.bind();
-                renderer.onSurfaceChanged(gl11, width, height);
-                eglManager.unbind();
-            } else {
+            initialized = true;
+            if (renderingThreadType == RenderingThreadType.BackgroundThread) {
                 // background
                 backgroundThread = createRenderingThread();
                 backgroundThread.start();
             }
+
         }
     }
 
