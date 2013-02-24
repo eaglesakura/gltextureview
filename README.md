@@ -34,7 +34,7 @@ GLTextureViewは自動的に作成したレンダリングスレッド、もし�
 =============
 
 GLTextureViewは、デフォルトでGLSurfaceViewとおおまかに同じ動作を行います。<BR>
-setRenderingThreadType()を呼び出さない限り、GLTextureViewはレンダリング専用のスレッドを作成し、Rendererのコールバックを行います。<BR>
+setRenderingThreadType()を呼び出さない限り、GLTextureViewはレンダリング専用のスレッドを作成し、Rendererのコールバックを行い続けます。<BR>
 この場合でも、requestRender()を呼び出すことで任意のスレッドから描画を行うことができます。<BR>
 
 ### 任意スレッドでの描画
@@ -61,14 +61,19 @@ GLTextureViewはGLTextureView#Rendererインターフェースを通じて描画
 	* 確保したリソースの解放等、release処理が必要であれば実装を行なってください。
 	* OpenGL ES 2.0で初期化した場合、GL10インターフェースは常にnullが渡されます。
 
-<pre><code>
+
+
+<pre>
     public interface Renderer {
         public void onSurfaceCreated(GL10 gl, EGLConfig config);
         public void onSurfaceChanged(GL10 gl, int width, int height);
         public void onDrawFrame(GL10 gl);
         public void onSurfaceDestroyed(GL10 gl);
     }
-</code></pre>
+</pre>
+
+
+=============
 
 
 ## ソースコードライセンス
