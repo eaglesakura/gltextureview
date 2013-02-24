@@ -8,7 +8,6 @@ import javax.microedition.khronos.opengles.GL11;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
-import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.TextureView;
@@ -163,14 +162,14 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         chooser.setColorSpec(color);
         chooser.setDepthEnable(hasDepth);
         chooser.setStencilEnable(hasStencil);
-        setEglConfigChooser(chooser);
+        setEGLConfigChooser(chooser);
     }
 
     /**
      * Config Chooser
      * @param eglConfigChooser
      */
-    public void setEglConfigChooser(EGLConfigChooser eglConfigChooser) {
+    public void setEGLConfigChooser(EGLConfigChooser eglConfigChooser) {
         synchronized (lock) {
             if (isInitialized()) {
                 throw new UnsupportedOperationException("GLTextureView Initialized");
@@ -205,6 +204,22 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
             }
 
             onRendering();
+        }
+    }
+
+    /**
+     * 
+     * @param runnable
+     */
+    public void requestAction(Runnable runnable) {
+        synchronized (lock) {
+            if (!isInitialized()) {
+                throw new UnsupportedOperationException("GLTextureView not initialized");
+            }
+
+            eglManager.bind();
+            runnable.run();
+            eglManager.unbind();
         }
     }
 
@@ -373,7 +388,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     /**
      * 
      */
-    public interface Renderer extends GLSurfaceView.Renderer {
+    public interface Renderer {
         /**
          * created EGLSurface.
          * {@link #onSurfaceChanged(GL10, int, int)}
