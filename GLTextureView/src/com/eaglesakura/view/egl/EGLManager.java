@@ -226,6 +226,15 @@ public class EGLManager {
     }
 
     /**
+     * 最後のリリースタイミングではNO_SURFACEで問題ない。
+     */
+    public void releaseThread() {
+        synchronized (lock) {
+            egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+        }
+    }
+
+    /**
      * レンダリング内容をフロントバッファへ転送する
      */
     public boolean swapBuffers() {

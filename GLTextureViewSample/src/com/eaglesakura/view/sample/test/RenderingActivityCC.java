@@ -1,10 +1,13 @@
-package com.eaglesakura.view.sample;
+package com.eaglesakura.view.sample.test;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 
 import com.eaglesakura.view.GLTextureView;
+import com.eaglesakura.view.sample.R;
+import com.eaglesakura.view.sample.R.id;
+import com.eaglesakura.view.sample.R.layout;
 
 public class RenderingActivityCC extends Activity {
 

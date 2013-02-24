@@ -2,9 +2,8 @@ package com.eaglesakura.view.sample.test;
 
 import android.test.ActivityInstrumentationTestCase2;
 
-import com.eaglesakura.view.sample.RenderingActivityCC;
-import com.eaglesakura.view.sample.renderer.es11.GL11RandomClearRenderer;
-import com.eaglesakura.view.sample.renderer.es11.GL20RandomClearRenderer;
+import com.eaglesakura.view.sample.renderer.GL11RandomClearRenderer;
+import com.eaglesakura.view.sample.renderer.GL20RandomClearRenderer;
 
 public class BackgroundRendereringResizeTest extends ActivityInstrumentationTestCase2<RenderingActivityCC> {
 

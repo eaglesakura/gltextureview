@@ -4,9 +4,8 @@ import android.test.ActivityInstrumentationTestCase2;
 
 import com.eaglesakura.view.GLTextureView;
 import com.eaglesakura.view.GLTextureView.GLESVersion;
-import com.eaglesakura.view.sample.RenderingActivity;
-import com.eaglesakura.view.sample.renderer.es11.GL11RandomClearRenderer;
-import com.eaglesakura.view.sample.renderer.es11.GL20RandomClearRenderer;
+import com.eaglesakura.view.sample.renderer.GL11RandomClearRenderer;
+import com.eaglesakura.view.sample.renderer.GL20RandomClearRenderer;
 
 public class BackgroundRendereringTest extends ActivityInstrumentationTestCase2<RenderingActivity> {
 

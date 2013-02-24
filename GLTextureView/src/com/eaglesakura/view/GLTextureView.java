@@ -15,6 +15,7 @@ import android.view.TextureView;
 
 import com.eaglesakura.view.egl.DefaultEGLConfigChooser;
 import com.eaglesakura.view.egl.EGLManager;
+import com.eaglesakura.view.egl.SurfaceColorSpec;
 
 /**
  * {@link SurfaceView} -> {@link TextureView} OpenGL ES 1.1 or OpenGL ES 2.0
@@ -35,7 +36,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     /**
      * 
      */
-    EGLManager eglManager = null;
+    protected EGLManager eglManager = null;
 
     /**
      * ConfigChooser
@@ -99,6 +100,10 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         setSurfaceTextureListener(this);
     }
 
+    public EGLManager getEGLManager() {
+        return eglManager;
+    }
+
     /**
      * Activity#onPause() || Fragment#onPause()
      */
@@ -145,6 +150,20 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
             }
             this.version = version;
         }
+    }
+
+    /**
+     * EGL Config setup
+     * @param color
+     * @param hasDepth
+     * @param hasStencil
+     */
+    public void setSurfaceSpec(SurfaceColorSpec color, boolean hasDepth, boolean hasStencil) {
+        DefaultEGLConfigChooser chooser = new DefaultEGLConfigChooser();
+        chooser.setColorSpec(color);
+        chooser.setDepthEnable(hasDepth);
+        chooser.setStencilEnable(hasStencil);
+        setEglConfigChooser(chooser);
     }
 
     /**
@@ -269,7 +288,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
                     // UIThread || request
                     eglManager.bind();
                     renderer.onSurfaceDestroyed(gl11);
-                    eglManager.unbind();
+                    eglManager.releaseThread();
                 }
             }
 
@@ -440,7 +459,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
                 synchronized (lock) {
                     eglManager.bind();
                     renderer.onSurfaceDestroyed(gl11);
-                    eglManager.unbind();
+                    eglManager.releaseThread();
                 }
             }
         };
