@@ -1,16 +1,17 @@
 package com.eaglesakura.view.egl;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
+import javax.microedition.khronos.opengles.GL11;
 
 import android.graphics.SurfaceTexture;
 import android.os.Looper;
+
+import com.eaglesakura.view.GLTextureView.EGLConfigChooser;
+import com.eaglesakura.view.GLTextureView.GLESVersion;
 
 public class EGLManager {
     /**
@@ -46,156 +47,36 @@ public class EGLManager {
     /**
      * システムがデフォルトで使用しているEGLDisplayオブジェクト
      */
-    EGLDisplay defDisplay = null;
+    EGLDisplay systemDisplay = null;
 
     /**
      * システムがデフォルトで使用しているEGLSurface(Read)
      */
-    EGLSurface defReadSurface = null;
+    EGLSurface systemReadSurface = null;
 
     /**
      * システムがデフォルトで使用しているEGLSurface(Draw)
      */
-    EGLSurface defDrawSurface = null;
+    EGLSurface systemDrawSurface = null;
 
     /**
      * システムがデフォルトで使用しているコンテキスト
      */
-    EGLContext defContext = null;
-
-    public EGLManager() {
-    }
-
-    private int[] getConfigSpec(SurfaceColorSpec color, int depth_bits, int stencil_bits) {
-        List<Integer> result = new ArrayList<Integer>();
-        // レンダラーをES2.0に設定
-        {
-            result.add(EGL10.EGL_RENDERABLE_TYPE);
-            result.add(4); /* EGL_OPENGL_ES2_BIT */
-        }
-
-        switch (color) {
-            case RGBA8:
-                result.add(EGL10.EGL_RED_SIZE);
-                result.add(8);
-                result.add(EGL10.EGL_GREEN_SIZE);
-                result.add(8);
-                result.add(EGL10.EGL_BLUE_SIZE);
-                result.add(8);
-                result.add(EGL10.EGL_ALPHA_SIZE);
-                result.add(8);
-                break;
-            case RGB8:
-                result.add(EGL10.EGL_RED_SIZE);
-                result.add(8);
-                result.add(EGL10.EGL_GREEN_SIZE);
-                result.add(8);
-                result.add(EGL10.EGL_BLUE_SIZE);
-                result.add(8);
-                break;
-            case RGB565:
-                result.add(EGL10.EGL_RED_SIZE);
-                result.add(5);
-                result.add(EGL10.EGL_GREEN_SIZE);
-                result.add(6);
-                result.add(EGL10.EGL_BLUE_SIZE);
-                result.add(5);
-                break;
-            default:
-                throw new UnsupportedOperationException(color.toString());
-        }
-
-        if (depth_bits > 0) {
-            result.add(EGL10.EGL_DEPTH_SIZE);
-            result.add(depth_bits);
-        }
-
-        if (stencil_bits > 0) {
-            result.add(EGL10.EGL_STENCIL_SIZE);
-            result.add(stencil_bits);
-        }
-
-        // 終端
-        result.add(EGL10.EGL_NONE);
-
-        int[] result_array = new int[result.size()];
-        for (int i = 0; i < result.size(); ++i) {
-            result_array[i] = result.get(i);
-        }
-        return result_array;
-    }
-
-    private int getConfigAttrib(EGLConfig eglConfig, int attr) {
-        int[] value = new int[1];
-        egl.eglGetConfigAttrib(eglDisplay, eglConfig, attr, value);
-        return value[0];
-    }
+    EGLContext systemContext = null;
 
     /**
-     * RGB各色、深度、ステンシルそれぞれが指定に近いconfigを取り出す
-     * @param color
-     * @param depth_bits
-     * @param stencil_bits
-     * @return
+     * GL10 object
+     * only OpenGL ES 1.1
      */
-    private EGLConfig chooseConfig(SurfaceColorSpec color, int depth_bits, int stencil_bits) {
-        //! コンフィグを全て取得する
-        EGLConfig[] configs = new EGLConfig[32];
-        // コンフィグ数がeglChooseConfigから返される
-        int[] config_num = new int[1];
-        if (!egl.eglChooseConfig(eglDisplay, getConfigSpec(color, depth_bits, stencil_bits), configs, configs.length,
-                config_num)) {
-            throw new RuntimeException("eglChooseConfig");
-        }
+    GL11 gl11 = null;
 
-        final int CONFIG_NUM = config_num[0];
-        int r_bits = 0;
-        int g_bits = 0;
-        int b_bits = 0;
-        int a_bits = 0;
-
-        switch (color) {
-            case RGBA8:
-                r_bits = g_bits = b_bits = a_bits = 8;
-                break;
-            case RGB8:
-                r_bits = g_bits = b_bits = 8;
-                break;
-            case RGB565:
-                r_bits = 5;
-                g_bits = 6;
-                b_bits = 5;
-                break;
-            default:
-                throw new UnsupportedOperationException(color.toString());
-        }
-
-        // 指定したちょうどのconfigを探す
-        for (int i = 0; i < CONFIG_NUM; ++i) {
-            final EGLConfig checkConfig = configs[i];
-
-            final int config_r = getConfigAttrib(checkConfig, EGL10.EGL_RED_SIZE);
-            final int config_g = getConfigAttrib(checkConfig, EGL10.EGL_GREEN_SIZE);
-            final int config_b = getConfigAttrib(checkConfig, EGL10.EGL_BLUE_SIZE);
-            final int config_a = getConfigAttrib(checkConfig, EGL10.EGL_ALPHA_SIZE);
-            final int config_d = getConfigAttrib(checkConfig, EGL10.EGL_DEPTH_SIZE);
-            final int config_s = getConfigAttrib(checkConfig, EGL10.EGL_STENCIL_SIZE);
-
-            // RGBが指定サイズジャスト、ADSが指定サイズ以上あれば合格とする
-            if (config_r == r_bits && config_g == g_bits && config_b == b_bits && config_a >= a_bits
-                    && config_d >= depth_bits && config_s >= stencil_bits) {
-                return checkConfig;
-            }
-        }
-
-        // 先頭のコンフィグを返す
-        return configs[0];
+    public EGLManager() {
     }
 
     /**
      * 初期化を行う
      */
-    public void initialize() {
+    public void initialize(final EGLConfigChooser chooser, final GLESVersion version) {
         synchronized (lock) {
             if (egl != null) {
                 throw new RuntimeException("initialized");
@@ -205,10 +86,10 @@ public class EGLManager {
 
             // システムのデフォルトオブジェクトを取り出す
             {
-                defDisplay = egl.eglGetCurrentDisplay();
-                defReadSurface = egl.eglGetCurrentSurface(EGL10.EGL_READ);
-                defDrawSurface = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
-                defContext = egl.eglGetCurrentContext();
+                systemDisplay = egl.eglGetCurrentDisplay();
+                systemReadSurface = egl.eglGetCurrentSurface(EGL10.EGL_READ);
+                systemDrawSurface = egl.eglGetCurrentSurface(EGL10.EGL_DRAW);
+                systemContext = egl.eglGetCurrentContext();
             }
 
             // ディスプレイ作成
@@ -224,21 +105,49 @@ public class EGLManager {
             }
             // コンフィグ取得
             {
-                eglConfig = chooseConfig(SurfaceColorSpec.RGBA8, 16, 8);
+                eglConfig = chooser.chooseConfig(egl, eglDisplay, version);
+                if (eglConfig == null) {
+                    throw new RuntimeException("chooseConfig");
+                }
             }
 
             // コンテキスト作成
             {
-                int[] attributes = {
-                        0x3098 /* EGL_CONTEXT_CLIENT_VERSION */, 2, EGL10.EGL_NONE
-                };
-                eglContext = egl.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attributes);
+                eglContext = egl.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT,
+                        version.getContextAttributes());
 
                 if (eglContext == EGL10.EGL_NO_CONTEXT) {
                     throw new RuntimeException("eglCreateContext");
                 }
             }
+
+            if (version == GLESVersion.OpenGLES11) {
+                gl11 = (GL11) eglContext.getGL();
+            }
         }
+    }
+
+    /**
+     * get GL11 object
+     * @return
+     */
+    public GL11 getGL11() {
+        if (gl11 == null) {
+            throw new UnsupportedOperationException("OpenGL ES 1.1 only");
+        }
+        return gl11;
+    }
+
+    public EGLConfig getConfig() {
+        return eglConfig;
+    }
+
+    public EGLSurface getSurface() {
+        return eglSurface;
+    }
+
+    public EGLContext getContext() {
+        return eglContext;
     }
 
     /**
@@ -265,7 +174,7 @@ public class EGLManager {
     /**
      * 解放処理を行う
      */
-    public void dispose() {
+    public void destroy() {
         synchronized (lock) {
             if (egl == null) {
                 return;
@@ -308,7 +217,7 @@ public class EGLManager {
         synchronized (lock) {
             if (isUIThread()) {
                 // UIスレッドならばシステムのデフォルトへ返す
-                egl.eglMakeCurrent(defDisplay, defDrawSurface, defReadSurface, defContext);
+                egl.eglMakeCurrent(systemDisplay, systemDrawSurface, systemReadSurface, systemContext);
             } else {
                 // それ以外ならば、null状態に戻す
                 egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
@@ -319,9 +228,9 @@ public class EGLManager {
     /**
      * レンダリング内容をフロントバッファへ転送する
      */
-    public void postFrontBuffer() {
+    public boolean swapBuffers() {
         synchronized (lock) {
-            egl.eglSwapBuffers(eglDisplay, eglSurface);
+            return egl.eglSwapBuffers(eglDisplay, eglSurface);
         }
     }
 }

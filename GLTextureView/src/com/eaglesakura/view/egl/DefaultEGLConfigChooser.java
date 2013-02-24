@@ -56,7 +56,43 @@ public class DefaultEGLConfigChooser implements EGLConfigChooser {
 
     @Override
     public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display, GLESVersion version) {
-        return null;
+
+        //! コンフィグを全て取得する
+        EGLConfig[] configs = new EGLConfig[32];
+        // コンフィグ数がeglChooseConfigから返される
+        int[] config_num = new int[1];
+        if (!egl.eglChooseConfig(display, getConfigSpec(version), configs, configs.length, config_num)) {
+            throw new RuntimeException("eglChooseConfig");
+        }
+
+        final int CONFIG_NUM = config_num[0];
+        final int r_bits = mColorSpec.getRedSize();
+        final int g_bits = mColorSpec.getGreenSize();
+        final int b_bits = mColorSpec.getBlueSize();
+        final int a_bits = mColorSpec.getAlphaSize();
+        final int d_bits = mDepthEnable ? 16 : 0;
+        final int s_bits = mStencilEnable ? 8 : 0;
+
+        // 指定したちょうどのconfigを探す
+        for (int i = 0; i < CONFIG_NUM; ++i) {
+            final EGLConfig checkConfig = configs[i];
+
+            final int config_r = getConfigAttrib(egl, display, checkConfig, EGL10.EGL_RED_SIZE);
+            final int config_g = getConfigAttrib(egl, display, checkConfig, EGL10.EGL_GREEN_SIZE);
+            final int config_b = getConfigAttrib(egl, display, checkConfig, EGL10.EGL_BLUE_SIZE);
+            final int config_a = getConfigAttrib(egl, display, checkConfig, EGL10.EGL_ALPHA_SIZE);
+            final int config_d = getConfigAttrib(egl, display, checkConfig, EGL10.EGL_DEPTH_SIZE);
+            final int config_s = getConfigAttrib(egl, display, checkConfig, EGL10.EGL_STENCIL_SIZE);
+
+            // RGBが指定サイズジャスト、ADSが指定サイズ以上あれば合格とする
+            if (config_r == r_bits && config_g == g_bits && config_b == b_bits && config_a >= a_bits
+                    && config_d >= d_bits && config_s >= s_bits) {
+                return checkConfig;
+            }
+        }
+
+        // 先頭のコンフィグを返す
+        return configs[0];
     }
 
     private int[] getConfigSpec(GLESVersion version) {
