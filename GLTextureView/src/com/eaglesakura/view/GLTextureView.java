@@ -10,6 +10,7 @@ import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.TextureView;
 
 import com.eaglesakura.view.egl.DefaultEGLConfigChooser;
@@ -19,6 +20,8 @@ import com.eaglesakura.view.egl.EGLManager;
  * {@link SurfaceView} -> {@link TextureView} OpenGL ES 1.1 or OpenGL ES 2.0
  */
 public class GLTextureView extends TextureView implements TextureView.SurfaceTextureListener {
+    static final String TAG = GLTextureView.class.getSimpleName();
+
     /**
      * callback object
      */
@@ -65,6 +68,11 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     boolean destroyed = false;
 
     /**
+     * Thread Sleep
+     */
+    boolean sleep = false;
+
+    /**
      * surface texture width
      */
     int surfaceWidth = 0;
@@ -87,6 +95,20 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     public GLTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         setSurfaceTextureListener(this);
+    }
+
+    /**
+     * Activity#onPause() || Fragment#onPause()
+     */
+    public void onPause() {
+        sleep = true;
+    }
+
+    /**
+     * Activity#onResume() || Fragment#onResume()
+     */
+    public void onResume() {
+        sleep = false;
     }
 
     protected boolean isInitialized() {
@@ -175,9 +197,15 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
 
                 eglManager.initialize(eglConfigChooser, version);
 
+                if (version == GLESVersion.OpenGLES11) {
+                    gl11 = eglManager.getGL11();
+                }
+
                 if (renderingThreadType != RenderingThreadType.BackgroundThread) {
                     // UIThread || request
+                    eglManager.bind();
                     renderer.onSurfaceCreated(gl11, eglManager.getConfig());
+                    eglManager.unbind();
                 }
             }
 
@@ -190,8 +218,11 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
                 eglManager.bind();
                 renderer.onSurfaceChanged(gl11, width, height);
                 eglManager.unbind();
+            } else {
+                // background
+                backgroundThread = createRenderingThread();
+                backgroundThread.start();
             }
-
         }
     }
 
@@ -215,10 +246,9 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-
+        destroyed = true;
         try {
             synchronized (lock) {
-                destroyed = true;
 
                 if (renderingThreadType != RenderingThreadType.BackgroundThread) {
                     // UIThread || request
@@ -230,6 +260,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
 
             if (backgroundThread != null) {
                 try {
+                    Log.d(TAG, "wait rendering thread");
                     // wait background thread
                     backgroundThread.join();
                 } catch (Exception e) {
@@ -355,22 +386,33 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
                 renderer.onSurfaceCreated(gl11, eglManager.getConfig());
 
                 while (!destroyed) {
-                    synchronized (lock) {
-                        eglManager.bind();
+                    if (!sleep) {
+                        synchronized (lock) {
+                            eglManager.bind();
 
-                        if (width != surfaceWidth || height != surfaceHeight) {
-                            width = surfaceWidth;
-                            height = surfaceHeight;
-                            renderer.onSurfaceChanged(gl11, width, height);
+                            if (width != surfaceWidth || height != surfaceHeight) {
+                                width = surfaceWidth;
+                                height = surfaceHeight;
+                                renderer.onSurfaceChanged(gl11, width, height);
+                            }
+
+                            renderer.onDrawFrame(gl11);
+
+                            // post
+                            if (!destroyed) {
+                                eglManager.swapBuffers();
+                            }
+                            eglManager.unbind();
+
+                            lock.notifyAll();
                         }
-
-                        renderer.onDrawFrame(gl11);
-
-                        // post
-                        if (!destroyed) {
-                            eglManager.swapBuffers();
+                    } else {
+                        try {
+                            // sleep rendering thread
+                            Thread.sleep(10);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                        eglManager.unbind();
                     }
                 }
 
