@@ -1,0 +1,22 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        <com.eaglesakura.view.GLTextureView
+            android:id="@+id/v1"
+            android:layout_width="fill_parent"
+            android:layout_height="120dp" />
+        <TextView
+            android:text="dasdasd"
+            android:layout_width="fill_parent"
+            android:layout_height="700dp" />
+        <TextView
+            android:text="dasdasd"
+            android:layout_width="fill_parent"
+            android:layout_height="700dp" />
+
+     </LinearLayout>
+</ScrollView>

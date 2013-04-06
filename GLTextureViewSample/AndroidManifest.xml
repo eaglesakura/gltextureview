@@ -62,6 +62,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.eaglesakura.view.sample.ScrollGL20Activity"
+            android:label="GL20 Scroll" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         
         <!-- for Renderer Test -->
         <activity android:name="com.eaglesakura.view.sample.test.RenderingActivity" >
